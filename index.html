@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Range Bets · Prototyping with Numbers</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg1:#f5f0e8; --bg2:#eee8da; --ink:#1a1a1a; --paper:#fffdf8; --card:#faf6ef;
+  --line:#e0dacd; --line2:#c9c0ae; --muted:#888; --blue:#2563EB; --green:#1d9d55; --red:#d00;
+}
+html,body{min-height:100%;}
+body{background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 100%);color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.hidden{display:none !important;}
+.wrap{max-width:720px;margin:0 auto;padding:24px 20px 96px;}
+h1,h2,h3{font-weight:800;letter-spacing:-.01em;text-wrap:balance;}
+a{color:var(--blue);}
+.muted{color:var(--muted);}
+
+/* cards + buttons */
+.card{background:var(--paper);border:2.5px solid var(--ink);border-radius:16px;box-shadow:4px 4px 0 var(--ink);
+  padding:20px 22px;margin-bottom:16px;}
+.card h3{font-size:.82rem;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--blue);margin-bottom:12px;}
+button{font-family:'Inter',sans-serif;cursor:pointer;}
+.primary{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:.95rem;letter-spacing:.03em;
+  background:var(--blue);color:#fff;border:2.5px solid var(--ink);border-radius:12px;padding:13px 26px;
+  box-shadow:3px 3px 0 var(--ink);}
+.primary:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink);}
+.primary:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink);}
+.primary:disabled{opacity:.4;cursor:default;box-shadow:3px 3px 0 var(--ink);transform:none;}
+.ghost{background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:10px;font-weight:700;
+  font-family:'IBM Plex Mono',monospace;font-size:.8rem;padding:9px 16px;box-shadow:2px 2px 0 var(--ink);}
+.ghost:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink);}
+.center{text-align:center;}
+
+/* intro */
+.hero{text-align:center;padding:14px 0 4px;}
+.hero .the{font-family:'IBM Plex Mono',monospace;color:var(--line2);letter-spacing:.14em;font-size:.8rem;text-transform:uppercase;}
+.hero h1{font-size:clamp(2.2rem,8vw,3.4rem);margin:4px 0 6px;}
+.hero h1 .hl{background:linear-gradient(transparent 55%,#fde68a 55%);padding:0 .1em;}
+.badge{display:inline-block;background:#fde68a;border:2px solid #d4a800;border-radius:30px;
+  padding:5px 16px;font-family:'IBM Plex Mono',monospace;font-size:.68rem;font-weight:700;letter-spacing:.06em;color:#7c6600;}
+.lede{font-size:1.1rem;color:#3a3a3a;max-width:34ch;margin:16px auto 0;text-wrap:pretty;}
+.lede b{color:var(--ink);}
+.rules{list-style:none;display:flex;flex-direction:column;gap:11px;}
+.rules li{display:flex;gap:11px;align-items:flex-start;font-size:.98rem;line-height:1.4;}
+.rules .ic{flex:none;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);box-shadow:1.5px 1.5px 0 var(--ink);}
+.rules b{color:var(--ink);}
+
+/* forms */
+label.fl{display:block;font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.06em;
+  text-transform:uppercase;color:#666;font-weight:700;margin:14px 0 6px;}
+input[type=text],input[type=email],textarea{width:100%;font-family:'Inter',sans-serif;font-size:1rem;
+  background:#fff;border:2px solid var(--line2);border-radius:10px;padding:11px 13px;color:var(--ink);}
+input:focus,textarea:focus{outline:none;border-color:var(--blue);}
+textarea{resize:vertical;min-height:70px;}
+.consent{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:.9rem;cursor:pointer;}
+.consent input{margin-top:3px;width:18px;height:18px;flex:none;accent-color:var(--blue);}
+.err{color:var(--red);font-size:.85rem;font-weight:600;margin-top:10px;display:none;}
+.slider{width:100%;accent-color:var(--blue);}
+
+/* status bar */
+.status{display:flex;justify-content:space-between;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;
+  font-weight:700;font-size:.82rem;padding:11px 0;border-bottom:2px solid #555;margin-bottom:16px;flex-wrap:wrap;}
+.rbadge{color:var(--blue);letter-spacing:.06em;}
+.bank{color:var(--ink);}
+
+/* question */
+.qlabel{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.08em;color:var(--blue);font-weight:700;text-transform:uppercase;margin-bottom:8px;}
+.qtext{font-size:1.25rem;font-weight:800;line-height:1.25;text-wrap:pretty;}
+.qunit{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.07em;color:var(--muted);margin-top:8px;text-transform:uppercase;}
+
+/* anchors */
+.anchors{display:flex;flex-direction:column;gap:10px;}
+.anchor{display:flex;align-items:center;gap:12px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;}
+.anchor .aic{color:#8a8277;flex:none;font-size:1.05em;}
+.anchor .atxt{flex:1;min-width:0;font-size:.98rem;line-height:1.35;}
+.anchor .result{display:block;margin-top:6px;font-size:.85rem;font-weight:600;line-height:1.35;}
+.anchor.held{border-color:var(--green);background:#f1faf4;}
+.anchor.held .result{color:#147a40;}
+.anchor.broke{border-color:var(--red);background:#fff2f0;}
+.anchor.broke .result{color:#9b0000;}
+.chk{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:.66rem;letter-spacing:.04em;border:1.5px solid var(--ink);
+  border-radius:8px;padding:6px 11px;background:#fff;flex:none;box-shadow:1.5px 1.5px 0 var(--ink);}
+.chk:hover{transform:translate(-1px,-1px);box-shadow:2.5px 2.5px 0 var(--ink);}
+.checknote{font-size:.86rem;color:#555;margin-bottom:12px;line-height:1.4;}
+.checknote b{color:var(--ink);}
+
+/* axis / band */
+.axiswrap{margin:22px 0 6px;}
+.track{position:relative;height:22px;background:#eee8da;border:2.5px solid #444;border-radius:11px;margin:34px 10px 0;touch-action:none;}
+.band{position:absolute;top:-2.5px;bottom:-2.5px;background:var(--blue);opacity:.9;border:2px solid var(--ink);border-radius:5px;}
+.handle{position:absolute;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:#fff;
+  border:3px solid var(--ink);box-shadow:2px 2px 0 var(--ink);cursor:grab;touch-action:none;z-index:3;}
+.handle:active{cursor:grabbing;}
+.handle.single{background:var(--blue);}
+.ticks{position:relative;height:30px;margin:8px 10px 0;}
+.tick{position:absolute;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);text-align:center;}
+.tick::before{content:"";position:absolute;top:-8px;left:50%;width:1.5px;height:6px;background:#bbb;}
+.truthline{position:absolute;top:-12px;bottom:-12px;width:3px;margin-left:-1.5px;background:var(--ink);z-index:4;}
+.truthlbl{position:absolute;top:-30px;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:.68rem;font-weight:700;color:var(--ink);white-space:nowrap;}
+.bandval{text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:600;color:#444;font-size:.95rem;margin-top:16px;}
+.pays{text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:800;color:var(--blue);font-size:1.6rem;margin-top:4px;}
+.pays small{display:block;font-family:'Inter',sans-serif;font-weight:600;font-size:.44em;color:var(--muted);letter-spacing:.02em;margin-top:2px;}
+.legend{text-align:center;color:var(--muted);font-size:.82rem;margin-top:10px;}
+
+/* cfo toggle */
+.cfo{display:flex;align-items:center;gap:10px;justify-content:center;background:#fff7e6;border:2px dashed #d4a800;
+  border-radius:12px;padding:12px 14px;margin:16px 0 4px;font-size:.92rem;}
+.cfo input{width:18px;height:18px;accent-color:#b8860b;}
+.cfo b{color:#7c6600;}
+
+/* result line items */
+.truth-reveal{text-align:center;padding:4px 0 8px;}
+.truth-reveal .tv{font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:2rem;color:var(--ink);}
+.truth-reveal .tl{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;}
+.items{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+.item{display:flex;justify-content:space-between;gap:12px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:8px;}
+.item:last-child{border-bottom:none;}
+.item .iname{font-weight:700;font-size:.92rem;}
+.item .iwhy{font-size:.82rem;color:#666;margin-top:2px;line-height:1.35;}
+.item .idelta{font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:1.1rem;flex:none;}
+.item.plus .idelta{color:var(--green);}
+.item.minus .idelta{color:var(--red);}
+.round-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;padding-top:12px;border-top:2px solid var(--ink);}
+.round-total .rt-l{font-family:'IBM Plex Mono',monospace;font-weight:700;letter-spacing:.05em;}
+.round-total .rt-v{font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:1.5rem;}
+.why-block p{margin-bottom:10px;font-size:.96rem;line-height:1.5;}
+.why-block .lbl{font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.08em;color:var(--blue);font-weight:700;text-transform:uppercase;display:block;margin-bottom:3px;}
+.source{font-size:.78rem;color:var(--muted);font-style:italic;margin-top:4px;}
+
+/* final + debrief */
+.bignum{text-align:center;}
+.bignum .n{font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:3rem;color:var(--blue);line-height:1;}
+.bignum .l{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-top:6px;}
+.recap{display:flex;flex-direction:column;gap:7px;}
+.recap-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.9rem;padding:7px 0;border-bottom:1px solid var(--line);}
+.recap-row:last-child{border-bottom:none;}
+.recap-row .rr-pts{font-family:'IBM Plex Mono',monospace;font-weight:800;}
+.pill{font-family:'IBM Plex Mono',monospace;font-size:.6rem;font-weight:700;border:1.5px solid var(--line2);border-radius:20px;padding:1px 8px;color:var(--muted);}
+.pill.hit{border-color:var(--green);color:var(--green);}
+.pill.miss{border-color:var(--red);color:var(--red);}
+.pill.caught{border-color:var(--blue);color:var(--blue);}
+.insight{background:var(--card);border:2px solid var(--ink);border-radius:14px;padding:16px 18px;margin-bottom:12px;position:relative;box-shadow:3px 3px 0 var(--ink);}
+.insight .num{position:absolute;top:-12px;left:16px;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;
+  font-family:'IBM Plex Mono',monospace;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);font-size:.85rem;}
+.insight p{font-size:.95rem;line-height:1.45;margin-top:4px;}
+
+.success-tick{font-size:3rem;text-align:center;}
+</style>
+</head>
+<body>
+
+<!-- ============ REGISTER / INTRO ============ -->
+<div id="screen-register" class="wrap">
+  <div class="hero">
+    <div class="the">the</div>
+    <h1><span class="hl">RANGE BETS</span></h1>
+    <div class="badge">PROTOTYPING WITH NUMBERS · d.MBA</div>
+    <div class="lede">🎯 You never give a number. You give a <b>range</b>. Narrow pays more, a miss costs for every ×10 you're out.</div>
+  </div>
+
+  <div class="card" style="margin-top:22px;">
+    <h3>How it works</h3>
+    <ul class="rules">
+      <li><span class="ic">1</span><span>Each round asks a tricky <b>"how many…?"</b> question with three facts (<b>anchors</b>) to reason from.</span></li>
+      <li><span class="ic">2</span><span>You don't answer with one number — you drag a <b>range</b>. A <b>tighter range scores more</b>, but only if the real answer is inside it. Too wide barely scores; too tight and you risk missing and <b>losing</b> points.</span></li>
+      <li><span class="ic">3</span><span>One free <b>check</b> per round tests the anchor you trust least. Some are <b>planted traps</b> that look sourced — checking costs nothing, trusting a bad one costs the plan.</span></li>
+      <li><span class="ic">4</span><span>Eight rounds. On one, the boss wants <b>a single number</b> — commit for a big payout, or play it safe with a range.</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Start</h3>
+    <label class="fl" for="reg-name">Your name</label>
+    <input type="text" id="reg-name" placeholder="Alex Rivera" maxlength="60" autocomplete="name">
+    <label class="fl" for="reg-email">Your email</label>
+    <input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email">
+    <label class="consent"><input type="checkbox" id="reg-consent"><span>I'm happy for my results to be emailed to me and the d.MBA team.</span></label>
+    <div class="err" id="reg-error">Please enter your name, a valid email, and tick the box.</div>
+    <div class="center" style="margin-top:18px;"><button class="primary" onclick="submitRegistration()">Start playing →</button></div>
+  </div>
+</div>
+
+<!-- ============ ROUND ============ -->
+<div id="screen-round" class="wrap hidden">
+  <div id="round-body"></div>
+</div>
+
+<!-- ============ RESULT ============ -->
+<div id="screen-result" class="wrap hidden">
+  <div id="result-body"></div>
+</div>
+
+<!-- ============ FINAL ============ -->
+<div id="screen-final" class="wrap hidden">
+  <div id="final-body"></div>
+</div>
+
+<!-- ============ REFLECT ============ -->
+<div id="screen-reflect" class="wrap hidden">
+  <div class="hero"><h1 style="font-size:2rem;">Nearly done 🙌</h1>
+    <div class="lede">A few quick reflections, then we'll email your results.</div></div>
+  <div class="card" style="margin-top:20px;">
+    <h3>Reflect</h3>
+    <label class="fl">How confident are you estimating under uncertainty now? (<span id="ref-conf-val">6</span>/10)</label>
+    <input type="range" class="slider" id="ref-confidence" min="1" max="10" value="6" oninput="document.getElementById('ref-conf-val').textContent=this.value">
+    <label class="fl" for="ref-takeaway">Your biggest takeaway</label>
+    <textarea id="ref-takeaway" placeholder="What clicked for you?"></textarea>
+    <label class="fl" for="ref-application">Where could you use this at work?</label>
+    <textarea id="ref-application" placeholder="A number you need to size…"></textarea>
+    <label class="fl" for="ref-surprise">What surprised you?</label>
+    <textarea id="ref-surprise" placeholder="A trap you fell for, a truth you didn't expect…"></textarea>
+    <label class="fl" for="ref-other">Anything else? (optional)</label>
+    <textarea id="ref-other" placeholder="Optional"></textarea>
+    <div class="err" id="ref-error">Please fill the three questions above.</div>
+    <div class="center" style="margin-top:18px;"><button class="primary" id="ref-submit-btn" onclick="submitReflection()">Send my results →</button></div>
+  </div>
+</div>
+
+<!-- ============ SUCCESS ============ -->
+<div id="screen-success" class="wrap hidden">
+  <div class="hero" style="padding-top:40px;">
+    <div class="success-tick">✅</div>
+    <h1 style="font-size:2rem;margin-top:10px;">All done!</h1>
+    <div class="lede">Your results are on their way to <b id="ref-confirm-email"></b>. Thanks for playing.</div>
+    <div class="center" style="margin-top:24px;"><button class="ghost" onclick="playAgain()">↻ Play again</button></div>
+  </div>
+</div>
+
+<script>
+// ===================== GAME DATA (fact-checked 2026-10-14; mirrors the facilitated version) =====================
+const GAME_NAME = 'Range Bets — Prototyping with Numbers';
+const MIN_W = 1/3, CFO_PAYOUT = 600, MISS_COST = 100;
+
+const ROUNDS = [
+  { title:`Golden Gate`, cfo:false,
+    q:`How many vehicles cross the Golden Gate Bridge on an average day?`,
+    unit:`vehicles a day`, prefix:``, emin:3, emax:6, truth:92500,
+    anchors:[
+      {text:`The bridge has six lanes, and a lane carries roughly 2,000 cars an hour.`, note:`Standard highway lane capacity.`},
+      {text:`The bridge district reports 33.7 million crossings in the 2025 fiscal year.`, note:`The district's two-way total, straight from its annual figures.`},
+      {text:`A travel blog says the bridge sees about 16.9 million crossings a year.`, shaky:true, fix:`That is the southbound count only, because tolls are collected one way. Both directions is about double: 33.7 million, or roughly 92,500 a day.`},
+    ],
+    why:`33.7 million crossings divided by 365 is about 92,500 a day. The 16.9 million figure is only the southbound half, so double it for both directions. Six lanes at 2,000 an hour tops out near 288,000, well above the real average.`,
+    decision:`If you were designing the toll app, that is 34 million transactions a year. Enough for a dedicated team, not enough for a marketplace.`,
+    source:`Golden Gate Bridge Highway and Transportation District, FY2025` },
+
+  { title:`Checkout redesign`, cfo:false,
+    q:`A product has one million users and 2 percent of them buy the €100 a year plan. A checkout redesign is expected to lift conversion by half a point. How much extra revenue a year?`,
+    unit:`euros a year`, prefix:`€`, emin:4, emax:7, truth:500000,
+    anchors:[
+      {text:`One million users. Two percent convert today.`, note:`From the product dashboard.`},
+      {text:`The plan costs €100 a year.`, note:`It is on the pricing page.`},
+      {text:`Half a point means conversion goes from 2.0 to 2.5 percent.`, note:`Half a percentage point, not half of the rate.`},
+    ],
+    why:`Half a point on one million users is 5,000 extra buyers. At €100 each that is €500,000 a year. Everything you needed was on the table, so a narrow band was the honest band.`,
+    decision:`€500k a year pays back a €150k redesign in four months. Fund it, and say the half point out loud as the assumption to watch.`,
+    source:`Prototyping with Numbers, chapter 4 case` },
+
+  { title:`Design system`, cfo:false,
+    q:`Ten designers each spend 100 hours a month building components by hand. A design system should cut that time. How much does it save a year?`,
+    unit:`euros a year`, prefix:`€`, emin:4, emax:7, truth:150000,
+    anchors:[
+      {text:`A designer hour costs the company about €50, fully loaded.`, note:`Finance's loaded rate for a mid-level designer in Western Europe.`},
+      {text:`Ten designers, 100 hours a month each on components.`, note:`Time tracking for the last quarter.`},
+      {text:`The vendor's deck promises a 60 percent productivity gain.`, shaky:true, fix:`Independent case studies, and Figma's own experiment, put the real gain near 20 to 35 percent (34 percent at best). Plan on a quarter.`},
+    ],
+    why:`A quarter of 100 hours is 25 hours a designer a month. Times ten designers, times €50, times twelve months is €150,000 a year. At the vendor's 60 percent you would have pitched €360,000 and been wrong by more than double.`,
+    decision:`€150k a year against a €120k build clears, but barely. Add the conversion side before you walk into the CFO's office.`,
+    source:`Prototyping with Numbers, chapter 4 case` },
+
+  { title:`Support inflow`, cfo:false,
+    q:`A support team receives 500 tickets a day and clears 500. The customer base grows 5 percent a month. How many tickets a day arrive twelve months from now?`,
+    unit:`tickets a day`, prefix:``, emin:2, emax:4, truth:898,
+    anchors:[
+      {text:`Inflow is 500 a day today.`, note:`Yesterday's count was 503.`},
+      {text:`Growth is 5 percent a month, and it compounds.`, note:`Same rate for eighteen months running.`},
+      {text:`The backlog is 20,000 tickets.`, note:`True, but the backlog is a stock, not a rate. It does not change tomorrow's inflow.`},
+    ],
+    why:`Five percent a month compounds to about 80 percent a year, not 60. 500 times 1.05, twelve times over, is about 900. Most bands land low because compounding feels linear.`,
+    decision:`Capacity is 500 and you will need 900. Hiring five a month gets you there only if you start now and productivity holds. That is why chapter two moves this case into a spreadsheet.`,
+    source:`Prototyping with Numbers, chapter 2 case` },
+
+  { title:`Dog walks`, cfo:false,
+    q:`A dog walking startup in Berlin. How many dogs could it realistically sign up as regular customers?`,
+    unit:`dogs`, prefix:``, emin:2, emax:6, truth:15000,
+    anchors:[
+      {text:`Berlin has about 130,000 registered dogs, maybe 150,000 counting unregistered ones.`, note:`City tax register, 2024, plus an allowance for unregistered dogs.`},
+      {text:`A survey of 100 owners: 10 said they would pay for regular walks.`, note:`Small sample, but it is your sample.`},
+      {text:`A pet industry report says 40 percent of urban owners use a paid walker.`, shaky:true, fix:`That counts anyone who has ever tried one. Regular paying customers are far fewer, closer to the 10 percent in your own survey.`},
+    ],
+    why:`Ten percent of 150,000 is 15,000 dogs. The report's 40 percent counts anyone who ever tried a walker, which would have inflated this to 60,000 and a plan four times too big.`,
+    decision:`15,000 regular dogs, each walked a few times a week, is enough demand for a thousand or more full time walkers. That is a marketplace, not an agency.`,
+    source:`Prototyping with Numbers, chapter 3 bottom up case` },
+
+  { title:`Lunch peak`, cfo:false,
+    q:`How many customers does an average McDonald's restaurant serve in a day?`,
+    unit:`customers a day`, prefix:``, emin:2, emax:5, truth:1550,
+    anchors:[
+      {text:`McDonald's serves more than 70 million customers a day worldwide.`, note:`Company materials, 2025.`},
+      {text:`It runs about 45,000 restaurants.`, note:`Same source, the FY2025 annual report.`},
+      {text:`Restaurants are open about 18 hours a day.`, note:`True. Irrelevant to the average, useful for the peak.`},
+    ],
+    why:`70 million divided by 45,000 is about 1,550. Everything you needed was on the table, so a narrow band was the honest band.`,
+    decision:`1,550 a day with a lunch peak means the kiosk has to take roughly 250 orders an hour at noon. That is the number the interface has to survive.`,
+    source:`McDonald's FY2025 annual report` },
+
+  { title:`Paid tier`, cfo:true,
+    q:`Your app has 40,000 monthly users and you are adding a paid tier at €8 a month. How many paying subscribers will you have after a year?`,
+    unit:`subscribers`, prefix:``, emin:1, emax:5, truth:1400,
+    anchors:[
+      {text:`40,000 monthly users, flat for a year.`, note:`Analytics, twelve month average.`},
+      {text:`Consumer freemium benchmarks: 2 to 5 percent of free users pay within a year.`, note:`Across several published cohorts; the median is around 2 percent.`},
+      {text:`A competitor announced that 20 percent of its users pay.`, shaky:true, fix:`That counts active users on a B2B tool that asks for a card upfront, not all free signups. Consumer freemium sits at 2 to 5 percent.`},
+    ],
+    why:`Three and a half percent of 40,000 is 1,400. The competitor's 20 percent would have promised 8,000 and a team you cannot pay for.`,
+    decision:`1,400 subscribers is about €134k a year. It does not fund a team. Either the free base has to grow or the price has to change, and that is the conversation to have before building the tier.`,
+    source:`Freemium conversion benchmarks, consumer apps` },
+
+  { title:`Missed appointments`, cfo:false,
+    q:`A hospital wants to cut missed appointments with better reminders. 12 percent of its 500,000 yearly appointments are missed, and each miss costs about €120. How much could better reminders save a year?`,
+    unit:`euros a year`, prefix:`€`, emin:4, emax:8, truth:1440000,
+    anchors:[
+      {text:`500,000 appointments a year, 12 percent missed.`, note:`This clinic runs high; the England average is nearer 6 percent.`},
+      {text:`A missed slot costs about €120 in staff and room time.`, note:`An NHS-style estimate; newer figures run higher.`},
+      {text:`A vendor's deck says reminders cut no shows by up to 80 percent.`, shaky:true, fix:`That is an unsourced headline. Controlled UK trials show about a quarter: a text reminder cut missed appointments from 11 to 8 percent. Plan on a fifth.`},
+    ],
+    why:`60,000 missed appointments a year. Plan on reminders cutting that by about a fifth: 12,000 fewer, times €120, is €1.44 million. The vendor's 80 percent would have promised four times as much.`,
+    decision:`€1.4M a year for better reminders. Pitch it as a hypothesis with the real trial figures cited, then run it on one clinic before rolling it out.`,
+    source:`Hallsworth et al. 2015 (Barts SMS reminder trials); NHS missed appointment cost estimates` },
+];
+const TOTAL_ROUNDS = ROUNDS.length;
+const DEBRIEF_FIXED = `A band is a claim about what you know. Narrow says you know a lot. Every round you were paid for the claim, then checked against reality, and a miss cost you in proportion to how wrong you were. That is what a projection is: a hypothesis with a width and a price.`;
+
+// ===================== EmailJS (shared d.MBA templates; distinguished by game_name) =====================
+const EMAILJS_PUBLIC_KEY='C16RP8PBnTudO3pTa';
+const EMAILJS_SERVICE_ID='service_vgc4x29';
+const EMAILJS_ADMIN_TEMPLATE='template_04i67k6';
+const EMAILJS_CONFIRM_TEMPLATE='template_fwackuq';
+const ADMIN_EMAIL='admin@d.mba,mersi@d.mba';
+
+// ===================== STATE =====================
+let player = { name:"", email:"", round:0, bank:0, history:[] };
+let bet = null;   // current round working bet: {eLo, eHi, single, singleE, checked, caught, order}
+
+// ===================== HELPERS =====================
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function $(id){ return document.getElementById(id); }
+let _screen=null;
+function showScreen(id){ document.querySelectorAll('body > div[id^="screen-"]').forEach(s=>s.classList.add('hidden')); $(id).classList.remove('hidden'); if(id!==_screen){ window.scrollTo(0,0); _screen=id; } }
+function rnd(x){ return Math.floor(x+0.5); }
+function sig(x){ return Math.abs(x)>=10 ? String(rnd(x)) : String(rnd(x*10)/10); }
+function shortTxt(t){ if(t.length<=60) return t; let cut=t.slice(0,57); if(cut.includes(' ')) cut=cut.slice(0,cut.trimEnd().lastIndexOf(' ')); return cut+'…'; }
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+// format a value nicely: 2 significant figures, grouped, with prefix
+function fmtVal(v, prefix){
+  prefix = prefix||'';
+  if(v>=1000){ const p=Math.pow(10, Math.floor(Math.log10(v))-1); v=Math.round(v/p)*p; }
+  else v=Math.round(v);
+  return prefix + v.toLocaleString('en-US');
+}
+// short tick label: 1k, 10k, 1M …
+function tickLabel(e, prefix){
+  prefix = prefix||'';
+  const v=Math.pow(10,e);
+  if(v>=1e6) return prefix+(v/1e6)+'M';
+  if(v>=1e3) return prefix+(v/1e3)+'k';
+  return prefix+v;
+}
+
+// ===================== REGISTER =====================
+function submitRegistration(){
+  const name=$('reg-name').value.trim();
+  const email=$('reg-email').value.trim();
+  const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if(!name || !ok || !$('reg-consent').checked){ $('reg-error').style.display='block'; return; }
+  $('reg-error').style.display='none';
+  player.name=name; player.email=email;
+  startGame();
+}
+
+// ===================== SCORING (pure port of scoring.py) =====================
+function withinCfo(v, truth){ return truth*0.8*(1-1e-9)<=v && v<=truth*1.2*(1+1e-9); }
+function shakyOf(r){ return r.anchors.find(a=>a.shaky) || null; }
+
+function scoreBand(eMin, eMax, single, r){
+  const tE=Math.log10(r.truth);
+  if(single){
+    const v=Math.pow(10,eMin);
+    const hit=withinCfo(v,r.truth);
+    const d=Math.abs(Math.log10(v/r.truth));
+    return { hit, payout:hit?CFO_PAYOUT:0, penalty:hit?0:rnd(MISS_COST*d),
+      off_pct:rnd(Math.abs(v/r.truth-1)*100), width:Math.log10(1.5) };
+  }
+  const hit = eMin<=tE && tE<=eMax;
+  const d = hit?0:(tE>eMax?tE-eMax:eMin-tE);
+  return { hit, payout:hit?rnd(100/Math.max(eMax-eMin,MIN_W)):0, penalty:rnd(MISS_COST*d),
+    miss_ratio:Math.pow(10,d), above:tE>eMax, width:eMax-eMin };
+}
+function missText(s, single){
+  if(s.hit) return '';
+  if(single) return `Off by ${s.off_pct} percent. That costs ${s.penalty}.`;
+  const where = s.above ? 'above your max' : 'below your min';
+  return `The truth landed ×${sig(s.miss_ratio)} ${where}. That costs ${s.penalty}.`;
+}
+function scoreRound(b, roundIdx){
+  const r=ROUNDS[roundIdx];
+  const single=!!b.single;
+  const eMin = single ? b.singleE : b.eLo;
+  const eMax = single ? b.singleE : b.eHi;
+  const s=scoreBand(eMin, eMax, single, r);
+  const result=s.payout - s.penalty;
+  const miss=missText(s, single);
+  const trap=shakyOf(r);
+  const checked=(b.checked!=null)?b.checked:null;
+  const items=[];
+  if(single){
+    if(s.hit) items.push({name:'✓ COMMITTED NUMBER', cls:'plus', delta:s.payout, why:'Within 20 percent. The CFO is impressed.'});
+    else items.push({name:'✗ COMMITTED AND MISSED', cls:'minus', delta:-s.penalty, why:miss+' 100 points per order of magnitude, and the CFO remembers.'});
+  } else if(s.hit){
+    items.push({name:'✓ BAND HIT', cls:'plus', delta:s.payout, why:`100 ÷ ${Math.max(s.width,MIN_W).toFixed(2)} orders of magnitude.`});
+  } else {
+    items.push({name:'✗ MISSED', cls:'minus', delta:-s.penalty, why:miss+' 100 points per order of magnitude outside the band.'});
+  }
+  if(checked!=null && checked>=0 && checked<r.anchors.length){
+    const a=r.anchors[checked];
+    if(a.shaky) items.push({name:'🔍 CHECK: DID NOT HOLD', cls:'plus', delta:0, why:`“${shortTxt(a.text)}” was misleading and you caught it before betting.`});
+    else if(trap) items.push({name:'🔍 CHECK: HELD', cls:'', delta:0, why:`It held. The one that did not: “${shortTxt(trap.text)}”`});
+    else items.push({name:'🔍 CHECK: HELD', cls:'', delta:0, why:'Nothing in this round was misleading.'});
+  } else {
+    items.push({name:'🔍 NO CHECK', cls:'', delta:0, why: trap ? `You skipped the free check — and “${shortTxt(trap.text)}” did not hold.` : 'You skipped the check. Nothing was misleading this round.'});
+  }
+  return { hit:s.hit, payout:s.payout, penalty:s.penalty, result, width:s.width,
+    eMin, eMax, single, miss, checked, caught:!!b.caught, trap:!!trap, items };
+}
+
+// ===================== GAME FLOW =====================
+function startGame(){
+  player.round=0; player.bank=0; player.history=[];
+  renderRound();
+}
+function newBet(r){
+  // start with the full-width band (the honest-but-wide default); player narrows it
+  return { eLo:r.emin, eHi:r.emax, single:false, singleE:(r.emin+r.emax)/2, checked:null, caught:false, order:shuffle([0,1,2]) };
+}
+
+function renderRound(){
+  const r=ROUNDS[player.round];
+  bet=newBet(r);
+  const anchorsHTML = bet.order.map((real,pos)=>{
+    return `<div class="anchor" id="anchor-${pos}" data-real="${real}">
+      <span class="aic">⚓</span>
+      <span class="atxt">${esc(r.anchors[real].text)}</span>
+      <button class="chk" id="chk-${pos}" onclick="doCheck(${pos})">CHECK</button>
+    </div>`;
+  }).join('');
+  const cfoHTML = r.cfo ? `<div class="cfo"><input type="checkbox" id="cfo-toggle" onchange="toggleSingle(this.checked)">
+      <label for="cfo-toggle">The boss wants <b>one number</b>. Commit to a single value for a flat <b>${CFO_PAYOUT}</b> if within 20% — or keep your range.</label></div>` : '';
+  $('round-body').innerHTML = `
+    <div class="status">
+      <span class="rbadge">ROUND ${player.round+1} / ${TOTAL_ROUNDS}</span>
+      <span>${esc(player.name)}</span>
+      <span class="bank">BANK ${player.bank}</span>
+    </div>
+    <div class="card">
+      <div class="qlabel">ROUND ${player.round+1} · ${esc(r.title.toUpperCase())}</div>
+      <div class="qtext">${esc(r.q)}</div>
+      <div class="qunit">UNIT: ${esc(r.unit.toUpperCase())}</div>
+    </div>
+    <div class="card">
+      <h3>Anchors</h3>
+      <div class="checknote"><b>One check per round, free.</b> Across the game some anchors are planted — spend your check on the one you trust least, or skip it when the numbers already add up.</div>
+      <div class="anchors">${anchorsHTML}</div>
+    </div>
+    <div class="card">
+      <h3>Your range</h3>
+      ${cfoHTML}
+      <div class="axiswrap" id="axiswrap"></div>
+      <div class="bandval" id="bandval"></div>
+      <div class="pays" id="pays"></div>
+      <div class="legend">Each tick is ×10 the last. Narrower band = bigger payout, bigger risk.</div>
+      <div class="center" style="margin-top:18px;"><button class="primary" onclick="lockRound()">LOCK IN &amp; SEE RESULT →</button></div>
+    </div>`;
+  showScreen('screen-round');
+  buildAxis();
+}
+
+// ----- axis build + drag -----
+function buildAxis(){
+  const r=ROUNDS[player.round];
+  let ticks='';
+  for(let e=r.emin;e<=r.emax;e++){
+    const pct=(e-r.emin)/(r.emax-r.emin)*100;
+    ticks += `<div class="tick" style="left:${pct}%">${tickLabel(e,r.prefix)}</div>`;
+  }
+  $('axiswrap').innerHTML = `
+    <div class="track" id="track">
+      <div class="band" id="band"></div>
+      <div class="handle" id="h-lo"></div>
+      <div class="handle" id="h-hi"></div>
+    </div>
+    <div class="ticks">${ticks}</div>`;
+  updateAxis();
+  wireHandles();
+}
+function expToPct(e){ const r=ROUNDS[player.round]; return (e-r.emin)/(r.emax-r.emin)*100; }
+function pctToExp(p){ const r=ROUNDS[player.round]; return r.emin + Math.max(0,Math.min(1,p/100))*(r.emax-r.emin); }
+function updateAxis(){
+  const r=ROUNDS[player.round];
+  const band=$('band'), hlo=$('h-lo'), hhi=$('h-hi');
+  if(bet.single){
+    const p=expToPct(bet.singleE);
+    band.style.display='none'; hhi.style.display='none';
+    hlo.classList.add('single'); hlo.style.left=p+'%';
+    $('bandval').textContent = 'Your number: ' + fmtVal(Math.pow(10,bet.singleE), r.prefix);
+    $('pays').innerHTML = CFO_PAYOUT + '<small>flat, if within 20% of the truth</small>';
+  } else {
+    band.style.display=''; hhi.style.display=''; hlo.classList.remove('single');
+    const lo=expToPct(bet.eLo), hi=expToPct(bet.eHi);
+    band.style.left=lo+'%'; band.style.width=(hi-lo)+'%';
+    hlo.style.left=lo+'%'; hhi.style.left=hi+'%';
+    $('bandval').textContent = fmtVal(Math.pow(10,bet.eLo), r.prefix) + '  –  ' + fmtVal(Math.pow(10,bet.eHi), r.prefix);
+    const w=bet.eHi-bet.eLo;
+    const pay=Math.min(300, rnd(100/Math.max(w,MIN_W)));
+    $('pays').innerHTML = 'PAYS ' + pay + '<small>if the real answer is inside your range</small>';
+  }
+}
+function wireHandles(){
+  const track=$('track');
+  function toExp(clientX){ const rect=track.getBoundingClientRect(); return pctToExp((clientX-rect.left)/rect.width*100); }
+  function drag(which){ return ev=>{
+    ev.preventDefault();
+    const h=ev.currentTarget; h.setPointerCapture(ev.pointerId);
+    const move=e=>{
+      const r=ROUNDS[player.round];
+      let x=toExp(e.clientX);
+      x=Math.max(r.emin, Math.min(r.emax, x));
+      if(bet.single){ bet.singleE=x; }
+      else if(which==='lo'){ bet.eLo=Math.min(x, bet.eHi-MIN_W); bet.eLo=Math.max(r.emin,bet.eLo); }
+      else { bet.eHi=Math.max(x, bet.eLo+MIN_W); bet.eHi=Math.min(r.emax,bet.eHi); }
+      updateAxis();
+    };
+    const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+    window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+  };}
+  $('h-lo').addEventListener('pointerdown', drag('lo'));
+  $('h-hi').addEventListener('pointerdown', drag('hi'));
+}
+function toggleSingle(on){
+  const r=ROUNDS[player.round];
+  bet.single=on;
+  if(on && (bet.singleE==null)) bet.singleE=(r.emin+r.emax)/2;
+  updateAxis();
+}
+
+// ----- check -----
+function doCheck(pos){
+  if(bet.checked!=null) return;           // one per round
+  const r=ROUNDS[player.round];
+  const real=bet.order[pos];
+  const a=r.anchors[real];
+  bet.checked=real; bet.caught=!!a.shaky;
+  const el=$('anchor-'+pos);
+  // spend the check: remove every CHECK button (one per round)
+  bet.order.forEach((_,p)=>{ const b=$('chk-'+p); if(b) b.remove(); });
+  const res=document.createElement('span'); res.className='result';
+  if(a.shaky){ el.classList.add('broke'); res.textContent='DID NOT HOLD. '+a.fix; }
+  else { el.classList.add('held'); res.textContent='HOLDS. '+(a.note||''); }
+  el.querySelector('.atxt').appendChild(res);
+  const note=document.querySelector('.checknote');
+  if(note) note.innerHTML = a.shaky ? '<b>Good catch.</b> Re-think your range before you lock in.' : '<b>That one holds.</b> Bet with what you have.';
+}
+
+// ----- lock + result -----
+function lockRound(){
+  const res=scoreRound(bet, player.round);
+  player.bank += res.result;
+  player.history.push({ round:player.round, result:res.result, hit:res.hit, width:res.width,
+    single:res.single, caught:res.caught, trap:res.trap, checked:res.checked });
+  renderResult(res);
+}
+function renderResult(res){
+  const r=ROUNDS[player.round];
+  // mini axis with truth
+  const tPct=expToPct(Math.log10(r.truth));
+  let miniTicks='';
+  for(let e=r.emin;e<=r.emax;e++){ const p=(e-r.emin)/(r.emax-r.emin)*100; miniTicks+=`<div class="tick" style="left:${p}%">${tickLabel(e,r.prefix)}</div>`; }
+  let bandMini;
+  if(res.single){ const p=expToPct(res.eMin); bandMini=`<div class="handle single" style="left:${p}%;position:absolute;"></div>`; }
+  else { const lo=expToPct(res.eMin), hi=expToPct(res.eMax); bandMini=`<div class="band" style="left:${lo}%;width:${Math.max(hi-lo,0.5)}%;background:${res.hit?'var(--green)':'var(--red)'}"></div>`; }
+  const trap=shakyOf(r);
+  const items = res.items.map(it=>`<div class="item ${it.cls}"><div><div class="iname">${esc(it.name)}</div><div class="iwhy">${esc(it.why)}</div></div><div class="idelta">${it.delta>0?'+':''}${it.delta}</div></div>`).join('');
+  $('result-body').innerHTML = `
+    <div class="status"><span class="rbadge">ROUND ${player.round+1} / ${TOTAL_ROUNDS} · REVEAL</span><span class="bank">BANK ${player.bank}</span></div>
+    <div class="card">
+      <div class="truth-reveal"><div class="tl">The real answer</div><div class="tv">${r.prefix}${r.truth.toLocaleString('en-US')}</div><div class="tl" style="margin-top:2px;">${esc(r.unit)}</div></div>
+      <div class="axiswrap"><div class="track" style="margin-top:40px;">${bandMini}<div class="truthline" style="left:${tPct}%"><span class="truthlbl">real answer</span></div></div><div class="ticks">${miniTicks}</div></div>
+    </div>
+    <div class="card">
+      <h3>Your score this round</h3>
+      <div class="items">${items}</div>
+      <div class="round-total"><span class="rt-l">ROUND TOTAL</span><span class="rt-v ${res.result>=0?'':''}" style="color:${res.result>0?'var(--green)':res.result<0?'var(--red)':'var(--ink)'}">${res.result>0?'+':''}${res.result}</span></div>
+    </div>
+    <div class="card why-block">
+      <h3>Why</h3>
+      <p>${esc(r.why)}</p>
+      ${trap?`<p><span class="lbl">The trap</span>“${esc(trap.text)}” — ${esc(trap.fix)}</p>`:`<p><span class="lbl">No trap</span>Every anchor held this round. The honest band was narrow.</p>`}
+      <p><span class="lbl">So what</span>${esc(r.decision)}</p>
+      <div class="source">${esc(r.source)}</div>
+    </div>
+    <div class="center"><button class="primary" onclick="nextRound()">${player.round+1<TOTAL_ROUNDS?'NEXT ROUND →':'SEE YOUR RESULTS →'}</button></div>`;
+  showScreen('screen-result');
+}
+function nextRound(){
+  if(player.round+1<TOTAL_ROUNDS){ player.round++; renderRound(); }
+  else renderFinal();
+}
+
+// ----- final -----
+function renderFinal(){
+  const hits=player.history.filter(h=>h.hit).length;
+  const trapsTotal=ROUNDS.filter(r=>shakyOf(r)).length;
+  const caught=player.history.filter(h=>h.caught).length;
+  const avgW = player.history.reduce((s,h)=>s+h.width,0)/player.history.length;
+  const recap = player.history.map(h=>{
+    const r=ROUNDS[h.round];
+    const pills = (h.hit?'<span class="pill hit">INSIDE</span>':'<span class="pill miss">MISSED</span>') + (h.caught?' <span class="pill caught">CAUGHT TRAP</span>':'');
+    return `<div class="recap-row"><span>R${h.round+1} · ${esc(r.title)} ${pills}</span><span class="rr-pts" style="color:${h.result>0?'var(--green)':h.result<0?'var(--red)':'var(--ink)'}">${h.result>0?'+':''}${h.result}</span></div>`;
+  }).join('');
+  // solo debrief cards
+  const card2 = `You kept the truth inside your band in ${hits} of ${TOTAL_ROUNDS} rounds, banking ${player.bank}. ` +
+    (avgW<0.9 ? `You bet tight — calibration like that is the whole skill, as long as the answer keeps landing inside.` :
+     avgW>2 ? `You played it wide and safe. Try narrowing where you can reason your way to a number — that is where the points are.` :
+     `A balanced mix of tight and wide bands — right about where an honest estimator lives.`);
+  const card3 = `${trapsTotal} of the eight anchors were planted traps, and you spotted ${caught}. The facts that hurt most look sourced and come from somewhere else. Checking one costs nothing. Believing one costs the plan.`;
+  const cards=[DEBRIEF_FIXED, card2, card3];
+  $('final-body').innerHTML = `
+    <div class="hero" style="padding-top:20px;"><h1 style="font-size:2rem;">That's the eight 🎯</h1></div>
+    <div class="card"><div class="bignum"><div class="n">${player.bank}</div><div class="l">points banked · ${hits} of ${TOTAL_ROUNDS} bands held · ${caught} of ${trapsTotal} traps caught</div></div></div>
+    <div class="card"><h3>Round by round</h3><div class="recap">${recap}</div></div>
+    <div class="card"><h3>What just happened</h3>${cards.map((t,i)=>`<div class="insight"><div class="num">${i+1}</div><p>${esc(t)}</p></div>`).join('')}</div>
+    <div class="center"><button class="primary" onclick="showScreen('screen-reflect')">Reflect &amp; finish →</button></div>`;
+  showScreen('screen-final');
+}
+
+// ----- reflection + email -----
+function buildPayload(){
+  const hits=player.history.filter(h=>h.hit).length;
+  const caught=player.history.filter(h=>h.caught).length;
+  const trapsTotal=ROUNDS.filter(r=>shakyOf(r)).length;
+  const summary=[
+    `Final score: ${player.bank} points over ${TOTAL_ROUNDS} rounds.`,
+    `Bands held: ${hits} of ${TOTAL_ROUNDS}. Traps caught: ${caught} of ${trapsTotal}.`,
+    `Round by round: ${player.history.map(h=>'R'+(h.round+1)+' '+(h.result>0?'+':'')+h.result).join(' · ')}.`,
+  ].join('\n');
+  return {
+    submitter: player.name,
+    student_name: player.name,
+    student_email: player.email,
+    game_name: GAME_NAME,
+    game_summary: summary,
+    confidence: $('ref-confidence').value + '/10',
+    takeaway: $('ref-takeaway').value.trim(),
+    application: $('ref-application').value.trim(),
+    surprise: $('ref-surprise').value.trim(),
+    other: $('ref-other').value.trim() || '(none)',
+    final_score: String(player.bank),
+    bands_held: hits + ' of ' + TOTAL_ROUNDS,
+    traps_caught: caught + ' of ' + trapsTotal,
+  };
+}
+function submitReflection(){
+  const t=$('ref-takeaway').value.trim(), a=$('ref-application').value.trim(), s=$('ref-surprise').value.trim();
+  if(!t||!a||!s){ $('ref-error').style.display='block'; return; }
+  $('ref-error').style.display='none';
+  const payload=buildPayload();
+  const btn=$('ref-submit-btn'); btn.disabled=true; btn.textContent='Sending…';
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+  Promise.all([
+    emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_ADMIN_TEMPLATE,{...payload,to_email:ADMIN_EMAIL}),
+    emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_CONFIRM_TEMPLATE,{...payload,to_email:player.email}),
+  ]).then(showSuccess).catch(e=>{ console.error('Email send failed:',e); showSuccess(); });
+}
+function showSuccess(){ $('ref-confirm-email').textContent=player.email; showScreen('screen-success'); }
+function playAgain(){ location.reload(); }
+</script>
+</body>
+</html>
