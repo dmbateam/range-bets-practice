@@ -61,8 +61,12 @@ input[type=text],input[type=email],textarea{width:100%;font-family:'Inter',sans-
   background:#fff;border:2px solid var(--line2);border-radius:10px;padding:11px 13px;color:var(--ink);}
 input:focus,textarea:focus{outline:none;border-color:var(--blue);}
 textarea{resize:vertical;min-height:70px;}
-.consent{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:.9rem;cursor:pointer;}
-.consent input{margin-top:3px;width:18px;height:18px;flex:none;accent-color:var(--blue);}
+.prep-note{color:var(--muted);font-size:.92rem;line-height:1.45;margin-bottom:4px;}
+.prep{display:flex;gap:10px;align-items:flex-start;margin-top:10px;font-size:.92rem;line-height:1.4;cursor:pointer;
+  background:#fff;border:2px solid var(--line2);border-radius:10px;padding:11px 13px;}
+.prep:has(input:checked){border-color:var(--blue);background:#eff6ff;}
+.prep input{margin-top:2px;width:18px;height:18px;flex:none;accent-color:var(--blue);}
+.prep small{display:block;color:var(--muted);font-size:.82rem;margin-top:2px;}
 .err{color:var(--red);font-size:.85rem;font-weight:600;margin-top:10px;display:none;}
 .slider{width:100%;accent-color:var(--blue);}
 
@@ -178,13 +182,18 @@ textarea{resize:vertical;min-height:70px;}
   </div>
 
   <div class="card">
-    <h3>Start</h3>
+    <h3>Before you play</h3>
+    <p class="prep-note">This is a make-up for the live session. Pop in your details and confirm you've done the prep.</p>
     <label class="fl" for="reg-name">Your name</label>
     <input type="text" id="reg-name" placeholder="Alex Rivera" maxlength="60" autocomplete="name">
     <label class="fl" for="reg-email">Your email</label>
     <input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email">
-    <label class="consent"><input type="checkbox" id="reg-consent"><span>I'm happy for my results to be emailed to me and the d.MBA team.</span></label>
-    <div class="err" id="reg-error">Please enter your name, a valid email, and tick the box.</div>
+    <label class="fl" id="reg-prep-label">Before you play, you should have</label>
+    <div role="group" aria-labelledby="reg-prep-label">
+      <label class="prep"><input type="checkbox" id="reg-ondemand"><span>I've watched the Prototyping with Numbers on-demand content</span></label>
+      <label class="prep"><input type="checkbox" id="reg-recording"><span>I've watched the recording of the live practice session<small>Or as much of it as I could</small></span></label>
+    </div>
+    <div class="err" id="reg-error">Please enter your name, a valid email, and tick both boxes.</div>
     <div class="center" style="margin-top:18px;"><button class="primary" onclick="submitRegistration()">Start playing →</button></div>
   </div>
 </div>
@@ -382,7 +391,7 @@ function submitRegistration(){
   const name=$('reg-name').value.trim();
   const email=$('reg-email').value.trim();
   const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if(!name || !ok || !$('reg-consent').checked){ $('reg-error').style.display='block'; return; }
+  if(!name || !ok || !$('reg-ondemand').checked || !$('reg-recording').checked){ $('reg-error').style.display='block'; return; }
   $('reg-error').style.display='none';
   player.name=name; player.email=email;
   startGame();
